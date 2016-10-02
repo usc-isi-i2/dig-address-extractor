@@ -143,6 +143,7 @@ class AddressExtractor(Extractor):
     def extract(self, doc):
         if 'text' in doc:
             return getAddressFromStringType(doc['text'], keywords)
+        return None
         
     def get_metadata(self):
         return copy.copy(self.metadata)
