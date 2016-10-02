@@ -1,4 +1,3 @@
-# -​*- coding: UTF-8 -*​-
 import json
 import sys
 import re
@@ -14,7 +13,6 @@ Keywords: contains list of all the addresses type that we want to use for proces
 
 keywords=["avenue","blvd","boulevard","pkwy","parkway","st","street","rd","road","drive","lane","alley","ave"]
 
-#phonePattern = re.compile(r'(\d{3})\D*(\d{3})\D*(\d{4})\D*(\d*)$')
 phonePattern = re.compile(r'(\d{3})\D*(\d{3})\D*(\d{4})')
 
 def cleanAddress(text_string,level):
@@ -96,24 +94,6 @@ def extractAddress(text,p,type1,addresses):
 #extractAddress("<BR />=?=?=  Table Shower available  =?=?=<br><br>?=Let us make you stress free one day at a time=?<br><br>=?= PUENTE Spa=?= <br><br>TEL:  626-338-8809  <br><br>  1832 Puente Ave. Baldwin Park, CA. 91706  <br><br>Clean Shower Included With Session<br><br>we always hiring beautiful ladies<br><br> Open- 9:00 AM to 9:30 PM<br>  </div>")
 
 
-def processFile(input_file_name,keywords,finalAddressData):
-    input_data=""
-    with open(input_file_name) as data_file:
-        input_data=json.load(data_file)
-    extracted_address=[]
-    for each_type in input_data:
-        for each_a in input_data[each_type]:
-            temp={}
-            temp["input"]=each_a
-            addresses=Set()
-            for each_keyword in keywords:
-                p = re.compile(r'\b%s\b' % each_keyword.lower(), re.I)
-                m=p.search(each_a.lower())
-                if m!=None:
-                    addresses=extractAddress(each_a,p,each_keyword,addresses)
-            temp["address"]=list(addresses)
-            finalAddressData.append(temp)
-
 """
 Input: Text String
 Output: Json object containing input text string with list of associated present addresses
@@ -150,16 +130,6 @@ def getAddressFromStringType(text_string,keywords):
     temp["address"]=list(addresses)
     return temp
 
-"""
-Input: File name and keyword python list ex: ["ave","street"] etc.
-Output: Json object containing list of all input text strings with list of associated present addresses
-"""
-def getAddressFromFile(file_name,keywords):
-    finalAddressData=[]
-    processFile(file_name,keywords,finalAddressData)
-    return finalAddressData
-
-
 
 import copy 
 import types
@@ -171,7 +141,8 @@ class AddressExtractor(Extractor):
         self.renamed_input_fields = ['text']  # ? renamed_input_fields
 
     def extract(self, doc):
-        return getAddressFromStringType(doc['text'], keywords)
+        if 'text' in doc:
+            return getAddressFromStringType(doc['text'], keywords)
         
     def get_metadata(self):
         return copy.copy(self.metadata)
@@ -182,23 +153,3 @@ class AddressExtractor(Extractor):
 
     def get_renamed_input_fields(self):
         return self.renamed_input_fields
-
-    def set_renamed_input_fields(self, renamed_input_fields):
-        if not (isinstance(renamed_input_fields, basestring) or isinstance(renamed_input_fields, types.ListType)):
-            raise ValueError("renamed_input_fields must be a string or a list")
-        self.renamed_input_fields = renamed_input_fields
-        return self 
-
-
-
-if __name__ == '__main__':
-    # startTime = time.time()
-    # finalAddressData=[]
-    # processFile(sys.argv[1],keywords,finalAddressData)
-    # outputFile=open(sys.argv[1].split(".")[0]+"_out.txt","w")
-    # json.dump(finalAddressData,outputFile,sort_keys=False,indent=2)
-    # outputFile.close()
-    # print ("Output File: ",sys.argv[1].split(".")[0]+"_out.txt")
-    # print ('Took {0} second !'.format(time.time() - startTime))
-    print getAddressFromStringType("Very passable black 25 year young TS girl with the best of the best! 9193959158 hosting off Western Boulevard NCstate area I'm waiting! 20-40 $pecial$", keywords)
-    
