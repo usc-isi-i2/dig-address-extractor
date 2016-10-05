@@ -11,7 +11,7 @@ from os import path
 
 setup(
     name = 'digAddressExtractor',
-    version = '0.1.0',
+    version = '0.2.0',
     description = 'digAddressExtractor',
     author = 'Lingzhe Teng',
     author_email = 'zwein27@gmail.com',
