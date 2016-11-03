@@ -1,16 +1,21 @@
 import re
-from sets import Set
 
 import copy
 from digExtractor.extractor import Extractor
 
 
 """
-Keywords: contains list of all the addresses type that we want to use for processing.
+Keywords: all the street types we want to match on.
 """
 
-keywords = ["avenue", "blvd", "boulevard", "pkwy", "parkway",
+keywords = ["avenue", "blvd", "boulevard", "pkwy", "parkway", "way",
             "st", "street", "rd", "road", "drive", "lane", "alley", "ave"]
+
+keyword_patterns = dict()
+
+for each_keyword in keywords:
+        p = re.compile(r'\b%s\b' % each_keyword.lower(), re.I)
+        keyword_patterns[each_keyword] = p
 
 phonePattern = re.compile(r'(\d{3})\D*(\d{3})\D*(\d{4})')
 
@@ -25,7 +30,7 @@ def cleanAddress(text_string, level):
     if level > 1:
         # Slicing from phone number reference word in found adddress to end
         m = phonePattern.search(text_string)
-        if m != None:
+        if m is not None:
             pos = m.span()[1]
             text_string = text_string[pos:]
 
@@ -71,82 +76,15 @@ def getSpace(text, start):
     return start
 
 
-def extractAddress(text, p, type1, addresses):
-    end = -1
-    m = p.search(text.lower())
-    if m != None:
-        end = m.span()[0] + len(type1) + 1
-    if end != -1:
-        flag = 1
-        flag, bkStart = getNum(text, end - (len(type1) + 1), 50)
-        if flag == 0:
-            start = getSpace(text, end - (len(type1) + 2))
-        elif flag == 1:
-            flag, start = getNum(text, bkStart - 1, 10)
-            #print (flag, text[start:end])
-            if flag == 0:
-                start = bkStart
-        flag, newEnd = getNumNext(text, end, 25)
-        if flag:
-            end = newEnd
-        addresses.add(cleanAddress(text[start:end].lower(), 3))
-        m = p.search(text.lower(), end)
-        if m != None:
-            addresses = extractAddress(text[end:], p, type1, addresses)
-        return addresses
-    return addresses
-#extractAddress("<BR />=?=?=  Table Shower available  =?=?=<br><br>?=Let us make you stress free one day at a time=?<br><br>=?= PUENTE Spa=?= <br><br>TEL:  626-338-8809  <br><br>  1832 Puente Ave. Baldwin Park, CA. 91706  <br><br>Clean Shower Included With Session<br><br>we always hiring beautiful ladies<br><br> Open- 9:00 AM to 9:30 PM<br>  </div>")
-
-
-"""
-Input: Text String
-Output: Json object containing input text string with list of associated present addresses
-
-Uses default keywords embedded in script file
-"""
-
-
-def getAddressFromString(text_string):
-    # temp={}
-    # temp["input"]=text_string
-    addresses = Set()
-    for each_keyword in keywords:
-        p = re.compile(r'\b%s\b' % each_keyword.lower(), re.I)
-        m = p.search(text_string.lower())
-        if m != None:
-            extractAddress(text_string, p, each_keyword, addresses)
-    # temp["address"]=list(addresses)
-    return addresses
-
-"""
-Input: Text String and keyword python list ex: ["ave","street"] etc.
-Output: Json object containing input text string with list of associated present addresses
-
-Uses keywords list passed as an parameter
-"""
-
-
-def getAddressFromStringType(text_string, keywords):
-    temp = {}
-    temp["input"] = text_string
-    addresses = Set()
-    for each_keyword in keywords:
-        p = re.compile(r'\b%s\b' % each_keyword.lower(), re.I)
-        m = p.search(text_string.lower())
-        if m != None:
-            extractAddress(text_string, p, each_keyword, addresses)
-    temp["address"] = list(addresses)
-    return temp
-
-
 class AddressExtractor(Extractor):
 
     def __init__(self):
+        super(AddressExtractor, self).__init__()
         self.renamed_input_fields = ['text']  # ? renamed_input_fields
 
     def extract(self, doc):
         if 'text' in doc:
-            return getAddressFromStringType(doc['text'], keywords)
+            return self.getAddressFromStringType(doc['text'], keywords)
         return None
 
     def get_metadata(self):
@@ -158,3 +96,50 @@ class AddressExtractor(Extractor):
 
     def get_renamed_input_fields(self):
         return self.renamed_input_fields
+
+    def extractAddress(self, text, p, type1, addresses, offset=0):
+        m = p.search(text, offset)
+        if m is None:
+            return addresses
+
+        end = m.span()[0] + len(type1) + 1
+        if end != -1:
+            flag = 1
+            flag, bkStart = getNum(text, end - (len(type1) + 1), 50)
+            if flag == 0:
+                start = getSpace(text, end - (len(type1) + 2))
+            elif flag == 1:
+                flag, start = getNum(text, bkStart - 1, 10)
+                if flag == 0:
+                    start = bkStart
+            flag, newEnd = getNumNext(text, end, 25)
+            if flag:
+                end = newEnd
+            if self.get_include_context():
+                address = {'value': cleanAddress(text[start:end], 3),
+                           'context': {'start': start,
+                                       'end': end}}
+                addresses.append(address)
+
+            else:
+                addresses.append(cleanAddress(text[start:end], 3))
+            addresses = self.extractAddress(text, p, type1, addresses, end)
+            return addresses
+        return addresses
+
+    """
+    Input: Text String and keyword python list ex: ["ave","street"] etc.
+    Output: Json object containing input text string with list of
+            associated present addresses
+
+    Uses keywords list passed as an parameter
+    """
+
+    def getAddressFromStringType(self, text_string, keywords):
+        addresses = list()
+        text_string_lower = text_string.lower()
+        for k, p in keyword_patterns.iteritems():
+            self.extractAddress(text_string_lower, p, k, addresses)
+        if not self.get_include_context():
+            return list(frozenset(addresses))
+        return addresses
