@@ -10,7 +10,7 @@ from setuptools import find_packages
 
 setup(
     name='digAddressExtractor',
-    version='0.3.0',
+    version='0.3.1',
     description='digAddressExtractor',
     author='Lingzhe Teng',
     author_email='zwein27@gmail.com',
