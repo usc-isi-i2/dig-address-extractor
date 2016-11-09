@@ -80,7 +80,7 @@ class AddressExtractor(Extractor):
 
     def __init__(self):
         super(AddressExtractor, self).__init__()
-        self.renamed_input_fields = ['text']  # ? renamed_input_fields
+        self.renamed_input_fields = 'text'
 
     def extract(self, doc):
         if 'text' in doc:
