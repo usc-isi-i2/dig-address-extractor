@@ -10,7 +10,7 @@ from setuptools import find_packages
 
 setup(
     name='digAddressExtractor',
-    version='0.3.1',
+    version='0.3.2',
     description='digAddressExtractor',
     author='Lingzhe Teng',
     author_email='zwein27@gmail.com',
@@ -18,5 +18,5 @@ setup(
     download_url='https://github.com/usc-isi-i2/dig-address-extractor',
     packages=find_packages(),
     keywords=['address', 'extractor'],
-    install_requires=['digExtractor>=0.3.2']
+    install_requires=['digExtractor>=0.3.6']
 )
